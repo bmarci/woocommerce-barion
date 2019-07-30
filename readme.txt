@@ -1,5 +1,5 @@
 === Barion Payment Gateway for WooCommerce ===
-Contributors: szelpe
+Contributors: szelpe, bmarci
 Tags: woocommerce, barion, gateway, payment
 Requires at least: 4.0
 Tested up to: 5.2

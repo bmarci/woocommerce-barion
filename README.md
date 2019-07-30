@@ -1,4 +1,4 @@
-# Barion Payment Gateway for WooCommerce
+# Barion Payment Gateway for WooCommerce and WooCommerce Subscription
 
 This plugin allows your customers to pay via [Barion Smart Gateway](https://www.barion.com/) in your WooCommerce online store.
 
@@ -9,6 +9,7 @@ This plugin allows your customers to pay via [Barion Smart Gateway](https://www.
 - Handles the callback from Barion after payment
   - sets the order status to "processing", "completed" or "failed" respectively
 - Refund payments via Barion
+- Handles subscription
 
 ## Installation
 
@@ -26,19 +27,23 @@ This plugin allows your customers to pay via [Barion Smart Gateway](https://www.
 1. Should you want to use the test envorinment, select it from the Barion Environment dropdown. You'll need to create a shop on the [Barion test page](https://test.barion.com).
 1. Enable the payment method if you're ready to use Barion
 
+### Optional Requirements 
+
+- WooCommerce Subscription
+
 ![](assets/screenshot-1.png)
 
 ## Feedback
 
-I'd be happy to hear your feedback! Feel free to contact me at szelpeter@szelpeter.hu 
+I'd be happy to hear your feedback! Feel free to contact me at contact@blummarci.com 
 
 ## Contribution
 
-You're welcome to contribute to this open source plugin by creating pull-requests on [Github](https://github.com/szelpe/woocommerce-barion). To do this, you need to fork the repository, implement the changes and push them to your fork. After that you can create a pull request to merge changes from your fork the main repository.
+You're welcome to contribute to this open source plugin by creating pull-requests on [Github](https://github.com/bmarci/woocommerce-barion). To do this, you need to fork the repository, implement the changes and push them to your fork. After that you can create a pull request to merge changes from your fork the main repository.
 
 ## Bugs
 
-[Please report bugs as Github issues.](https://github.com/szelpe/woocommerce-barion/issues)
+[Please report bugs as Github issues.](https://github.com/bmarci/woocommerce-barion/issues)
 
 Barion and the Barion logo are trademarks or registered trademarks of Sense/Net Inc.
 

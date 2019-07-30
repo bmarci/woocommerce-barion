@@ -9,7 +9,7 @@ module.exports = function( grunt ) {
 				type: 'wp-plugin',
 				domainPath: 'languages',
 				potHeaders: {
-					'report-msgid-bugs-to': 'https://github.com/szelpe/woocommerce-barion/issues',
+					'report-msgid-bugs-to': 'https://github.com/bmarci/woocommerce-barion/issues',
 					'language-team': 'LANGUAGE <EMAIL@ADDRESS>'
 				}
 			},
