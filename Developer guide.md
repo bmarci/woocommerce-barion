@@ -25,3 +25,5 @@ POT file can be generated using Grunt.
 npm install grunt grunt-wp-i18n
 grunt 
 ```
+
+/wc-api/WC_Gateway_Barion/?paymentId=29a15ab952554dbfbd963094ae27f932

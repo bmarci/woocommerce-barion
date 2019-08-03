@@ -8,6 +8,7 @@ require_once 'barion-library/library/BarionClient.php';
 require_once 'includes/class-wc-gateway-barion-ipn-handler.php';
 require_once 'includes/class-wc-gateway-barion-return-from-payment.php';
 require_once('includes/class-wc-gateway-barion-request.php');
+require_once('includes/class-wc-payment-token-barion.php');
 
 class WC_Gateway_Barion extends WC_Payment_Gateway {
 
@@ -51,6 +52,7 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
             $order_received_handler = new WC_Gateway_Barion_Return_From_Payment($this->barion_client, $this);
             do_action('woocommerce_barion_init', $this->barion_client, $this);
         }
+
     }
 
     public function plugin_url() {
@@ -73,6 +75,7 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
         }
 
         self::$log->add('barion', $message);
+
     }
 
     /**
@@ -165,7 +168,7 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
         }
     }
 
-    function process_payment($order_id) {
+    function process_payment($order_id, $register_token = false) {
         $order = new WC_Order($order_id);
 
         do_action('woocommerce_barion_process_payment', $order);
@@ -181,7 +184,7 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
 
         $request = new WC_Gateway_Barion_Request($this->barion_client, $this);
 
-        $request->prepare_payment($order);
+        $request->prepare_payment($order, $register_token, false);
 
         if(!$request->is_prepared) {
             return array(
@@ -274,4 +277,5 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
             $order->update_status($order_status, __('Order status updated based on the settings.', 'pay-via-barion-for-woocommerce'));
         }
     }
+
 }

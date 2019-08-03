@@ -16,12 +16,18 @@ Domain Path: /languages
 
 add_action('plugins_loaded', 'woocommerce_gateway_barion_init', 0);
 
+
 function woocommerce_gateway_barion_init() {
     if (!class_exists('WC_Payment_Gateway'))
         return;
 
     load_plugin_textdomain('pay-via-barion-for-woocommerce', false, plugin_basename(dirname(__FILE__)) . "/languages");
 
+    init_gateway();
+
+}
+
+function init_gateway() {
     class_exists('WC_Subscriptions')
         ? require_once('class-wc-gateway-barion-subscription.php') : require_once('class-wc-gateway-barion.php');
 
@@ -29,9 +35,35 @@ function woocommerce_gateway_barion_init() {
      * Add the Gateway to WooCommerce
      **/
     function woocommerce_add_gateway_barion_gateway($methods) {
-        $methods[] = 'WC_Gateway_Barion';
+        $methods[] = class_exists('WC_Subscriptions') ? 'WC_Gateway_Barion_Subscription' : 'WC_Gateway_Barion';
         return $methods;
     }
 
     add_filter('woocommerce_payment_gateways', 'woocommerce_add_gateway_barion_gateway' );
 }
+
+
+function filter_orders_to_pay($element) {
+    return $element->get_status() == 'pending'; // TODO: check dates
+}
+
+function wcs_barion_scheduled_subscription($subscription_id) {
+    $instance = new WC_Gateway_Barion_Subscription();
+    $order = new WC_Subscription($subscription_id);
+    $related_orders = array_filter($order->get_related_orders( 'all', 'renewal' ), 'filter_orders_to_pay');
+
+    $token_ids = $order->get_payment_tokens();
+
+    WC_Gateway_Barion_Subscription::log('$token_ids: '. print_r($token_ids, TRUE));
+
+    foreach ($related_orders as $related_order) {
+        $request = new WC_Gateway_Barion_Request($instance->barion_client, $instance);
+        $request->prepare_payment($related_order, false, true);
+        $redirectUrl = $request->get_redirect_url();
+        $related_order->add_order_note(__('User redirected to the Barion payment page.', 'pay-via-barion-for-woocommerce') . ' redirectUrl: "' . $redirectUrl . '"');
+    }
+
+}
+
+add_action('woocommerce_scheduled_subscription_payment', 'wcs_barion_scheduled_subscription');
+

@@ -4,6 +4,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+require_once('class-wc-payment-token-barion.php');
+
 class WC_Gateway_Barion_Request {
     public function __construct($barion_client, $gateway) {
         $this->barion_client = $barion_client;
@@ -13,13 +15,24 @@ class WC_Gateway_Barion_Request {
     /**
      * @param WC_Order $order
      */
-    public function prepare_payment($order) {
+    public function prepare_payment($order, $register_token = false, $renewal = false) {
         $this->order = $order;
         $transaction = new PaymentTransactionModel();
         $transaction->POSTransactionId = $order->get_id();
         $transaction->Payee = $this->gateway->payee;
         $transaction->Total = $this->round($order->get_total(), $order->get_currency());
         $transaction->Comment = "";
+
+        $token_string = '';
+        if ( $register_token ) {
+            $token_string = 'Just_a_test_token';
+            $token = new WC_Payment_Token_Barion();
+            $token->set_token($token_string);
+            $token->set_gateway_id('barion_subscription');
+            $token->save();
+        } else if ( $renewal ) {
+            $token_string = 'Just_a_test_token'; // TODO: get the proper token
+        }
 
         $this->prepare_items($order, $transaction);
 
@@ -35,6 +48,8 @@ class WC_Gateway_Barion_Request {
         $paymentRequest->RedirectUrl = add_query_arg('order-id', $order->get_id(), WC()->api_request_url('WC_Gateway_Barion_Return_From_Payment'));
         $paymentRequest->CallbackUrl = WC()->api_request_url('WC_Gateway_Barion');
         $paymentRequest->Currency = $order->get_currency();
+        $paymentRequest->InitiateRecurrence = $register_token;
+        $paymentRequest->RecurrenceId = $token_string;
         $paymentRequest->AddTransaction($transaction);
 
         apply_filters('woocommerce_barion_prepare_payment', $paymentRequest, $order);
@@ -42,6 +57,8 @@ class WC_Gateway_Barion_Request {
         $this->payment = $this->barion_client->PreparePayment($paymentRequest);
 
         do_action('woocommerce_barion_prepare_payment_called', $this->payment, $order);
+
+        WC_Gateway_Barion::log('PaymentRequestId: ' .$paymentRequest->PaymentRequestId);
 
         if($this->payment->RequestSuccessful) {
             $this->gateway->set_barion_payment_id($order, $this->payment->PaymentId);
