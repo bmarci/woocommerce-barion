@@ -28,14 +28,13 @@ function woocommerce_gateway_barion_init() {
 }
 
 function init_gateway() {
-    class_exists('WC_Subscriptions')
-        ? require_once('class-wc-gateway-barion-subscription.php') : require_once('class-wc-gateway-barion.php');
+    require_once('class-wc-gateway-barion.php');
 
     /**
      * Add the Gateway to WooCommerce
      **/
     function woocommerce_add_gateway_barion_gateway($methods) {
-        $methods[] = class_exists('WC_Subscriptions') ? 'WC_Gateway_Barion_Subscription' : 'WC_Gateway_Barion';
+        $methods[] = 'WC_Gateway_Barion';
         return $methods;
     }
 
@@ -47,18 +46,18 @@ function filter_orders_to_pay($element) {
     return $element->get_status() == 'pending'; // TODO: check dates
 }
 
-function wcs_barion_scheduled_subscription($subscription_id) {
-    $instance = new WC_Gateway_Barion_Subscription();
+function wcs_barion_scheduled_subscription($subscription_id) { // TODO: refactor me
+    $instance = new WC_Gateway_Barion();
+
     $order = new WC_Subscription($subscription_id);
+
     $related_orders = array_filter($order->get_related_orders( 'all', 'renewal' ), 'filter_orders_to_pay');
 
-    $token_ids = $order->get_payment_tokens();
-
-    WC_Gateway_Barion_Subscription::log('$token_ids: '. print_r($token_ids, TRUE));
+    $token = $order->get_parent()->get_meta('barion_order_token');
 
     foreach ($related_orders as $related_order) {
         $request = new WC_Gateway_Barion_Request($instance->barion_client, $instance);
-        $request->prepare_payment($related_order, false, true);
+        $request->prepare_payment($related_order, false, $token);
         $redirectUrl = $request->get_redirect_url();
         $related_order->add_order_note(__('User redirected to the Barion payment page.', 'pay-via-barion-for-woocommerce') . ' redirectUrl: "' . $redirectUrl . '"');
     }

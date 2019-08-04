@@ -8,7 +8,6 @@ require_once 'barion-library/library/BarionClient.php';
 require_once 'includes/class-wc-gateway-barion-ipn-handler.php';
 require_once 'includes/class-wc-gateway-barion-return-from-payment.php';
 require_once('includes/class-wc-gateway-barion-request.php');
-require_once('includes/class-wc-payment-token-barion.php');
 
 class WC_Gateway_Barion extends WC_Payment_Gateway {
 
@@ -20,7 +19,11 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
         $this->order_button_text  = __( 'Proceed to Barion', 'pay-via-barion-for-woocommerce' );
         $this->supports           = array(
             'products',
-            'refunds'
+            'refunds',
+            'subscriptions',
+            'subscription_suspension',
+            'subscription_reactivation',
+            'tokenization'
         );
         $this->supported_currencies = array('USD', 'EUR', 'HUF', 'CZK');
 
@@ -66,6 +69,9 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
     static $log = null;
 
     public static function log($message, $level = 'error') {
+        $date = new DateTime();
+        $date = $date->format("r");
+        error_log($date.': '.$message."\n", 3, "/Users/martonblum/off/log/wcs_barion_fork_info2.log");
         if ($level != 'error' && !self::$debug_mode) {
             return;
         }
@@ -168,7 +174,7 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
         }
     }
 
-    function process_payment($order_id, $register_token = false) {
+    function process_payment($order_id) {
         $order = new WC_Order($order_id);
 
         do_action('woocommerce_barion_process_payment', $order);
@@ -184,7 +190,7 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
 
         $request = new WC_Gateway_Barion_Request($this->barion_client, $this);
 
-        $request->prepare_payment($order, $register_token, false);
+        $request->prepare_payment($order, true);
 
         if(!$request->is_prepared) {
             return array(

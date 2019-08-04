@@ -4,8 +4,6 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-require_once('class-wc-payment-token-barion.php');
-
 class WC_Gateway_Barion_Request {
     public function __construct($barion_client, $gateway) {
         $this->barion_client = $barion_client;
@@ -15,7 +13,7 @@ class WC_Gateway_Barion_Request {
     /**
      * @param WC_Order $order
      */
-    public function prepare_payment($order, $register_token = false, $renewal = false) {
+    public function prepare_payment($order, $register_token = false, $token = '') { // TODO: refactor me
         $this->order = $order;
         $transaction = new PaymentTransactionModel();
         $transaction->POSTransactionId = $order->get_id();
@@ -23,15 +21,11 @@ class WC_Gateway_Barion_Request {
         $transaction->Total = $this->round($order->get_total(), $order->get_currency());
         $transaction->Comment = "";
 
-        $token_string = '';
-        if ( $register_token ) {
-            $token_string = 'Just_a_test_token';
-            $token = new WC_Payment_Token_Barion();
-            $token->set_token($token_string);
-            $token->set_gateway_id('barion_subscription');
-            $token->save();
-        } else if ( $renewal ) {
-            $token_string = 'Just_a_test_token'; // TODO: get the proper token
+        $token_string = $token;
+        if ( $register_token && $token == '') {
+            $token_string = hash( 'sha256', random_bytes(32));
+            $order->update_meta_data( 'barion_order_token', $token_string );
+            $order->save();
         }
 
         $this->prepare_items($order, $transaction);
