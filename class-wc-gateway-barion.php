@@ -22,8 +22,7 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
             'refunds',
             'subscriptions',
             'subscription_suspension',
-            'subscription_reactivation',
-            'tokenization'
+            'subscription_cancellation'
         );
         $this->supported_currencies = array('USD', 'EUR', 'HUF', 'CZK');
 
