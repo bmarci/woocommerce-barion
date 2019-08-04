@@ -187,7 +187,7 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
 
         $request = new WC_Gateway_Barion_Request($this->barion_client, $this);
 
-        $request->prepare_payment($order, true);
+        $request->prepare_payment($order, self::isSubscription($order_id)); // TODO: refactor me
 
         if(!$request->is_prepared) {
             return array(
@@ -203,6 +203,14 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
             'result' => 'success',
             'redirect' => $redirectUrl
         );
+    }
+
+    /**
+     * @param $order_id
+     * @return bool True if the order contains a subscription.
+     */
+    public function isSubscription($order_id) { // TODO: refactor me
+        return class_exists('WC_Subscriptions_Order') ? WC_Subscriptions_Order::order_contains_subscription( $order_id ) : false;
     }
 
     /**
