@@ -7,7 +7,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once 'barion-library/library/BarionClient.php';
 require_once 'includes/class-wc-gateway-barion-ipn-handler.php';
 require_once 'includes/class-wc-gateway-barion-return-from-payment.php';
-require_once('includes/class-wc-gateway-barion-request.php');
+require_once 'includes/class-wc-gateway-barion-request.php';
+require_once 'includes/class-wc-gateway-barion-token.php';
+require_once 'includes/class-wc-gateway-barion-payment-processor.php';
+require_once 'includes/class-wc-gateway-barion-order-helper.php';
+
 
 class WC_Gateway_Barion extends WC_Payment_Gateway {
 
@@ -176,12 +180,17 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
 
     function process_payment($order_id) {
         $order = new WC_Order($order_id);
+        $token = '';
 
         do_action('woocommerce_barion_process_payment', $order);
 
+        WC_Gateway_Barion::log('1');
+
         if($order->get_total() <= 0) { // TODO: refactor me
-            if ($this->isResubscribe($order_id)) {
-                $this->updateOrderToken($order_id, $order);
+            if (WC_Gateway_Barion_Order_Helper::isResubscribe($order_id)) {
+                $order_parent = WC_Gateway_Barion_Order_Helper::getInitialSubscriptionOrder($order_id);
+                $token = $order_parent->get_meta('barion_order_token');
+                WC_Gateway_Barion_Order_Helper::updateOrderToken($order, $token);
             }
 
             $this->payment_complete($order);
@@ -191,33 +200,27 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
                 'redirect' => $this->get_return_url($order)
             );
         }
+        WC_Gateway_Barion::log('2');
+
 
         $request = new WC_Gateway_Barion_Request($this->barion_client, $this);
 
-        $request->prepare_payment($order, self::isSubscription($order_id)); // TODO: refactor me
+        WC_Gateway_Barion::log('3');
 
-        if(!$request->is_prepared) {
-            return array(
-                'result' => 'failure'
-            );
+
+        if (WC_Gateway_Barion_Order_Helper::is_subscription($order_id)) {
+            WC_Gateway_Barion::log('4');
+
+            $token = WC_Gateway_Barion_Token::generate_token();
+            WC_Gateway_Barion::log('5');
+
+            WC_Gateway_Barion_Order_Helper::updateOrderToken($order, $token);
+            WC_Gateway_Barion::log('6');
+
         }
+        WC_Gateway_Barion::log('7');
 
-        $redirectUrl = $request->get_redirect_url();
-
-        $order->add_order_note(__('User redirected to the Barion payment page.', 'pay-via-barion-for-woocommerce') . ' redirectUrl: "' . $redirectUrl . '"');
-
-        return array(
-            'result' => 'success',
-            'redirect' => $redirectUrl
-        );
-    }
-
-    /**
-     * @param $order_id
-     * @return bool True if the order contains a subscription.
-     */
-    public function isSubscription($order_id) { // TODO: refactor me
-        return class_exists('WC_Subscriptions_Order') ? WC_Subscriptions_Order::order_contains_subscription( $order_id ) : false;
+        return  WC_Gateway_Barion_Payment_Processor::process_payment($request, $order, $token, WC_Gateway_Barion_Order_Helper::is_subscription($order_id));
     }
 
     /**
@@ -295,35 +298,4 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
             $order->update_status($order_status, __('Order status updated based on the settings.', 'pay-via-barion-for-woocommerce'));
         }
     }
-
-    /**
-     * @param $order_id
-     * @return bool
-     */
-    public function isResubscribe($order_id)
-    {
-        return self::isSubscription($order_id) && wcs_order_contains_resubscribe($order_id);
-    }
-
-    /**
-     * @param $order_id
-     * @return mixed
-     */
-    public function getFirstElementOfArray($array)
-    {
-        return array_pop(array_reverse($array));
-    }
-
-    /**
-     * @param $order_id
-     * @param WC_Order $order
-     */
-    public function updateOrderToken($order_id, WC_Order $order)
-    {
-        $order_parent = $this->getFirstElementOfArray(wcs_get_subscriptions_for_resubscribe_order($order_id))->get_parent(); // It is not a zero index array...
-        $token = $order_parent->get_meta('barion_order_token');
-        $order->update_meta_data('barion_order_token', $token);
-        $order->save();
-    }
-
 }

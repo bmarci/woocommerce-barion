@@ -29,6 +29,8 @@ function woocommerce_gateway_barion_init() {
 
 function init_gateway() {
     require_once('class-wc-gateway-barion.php');
+    require_once 'includes/class-wc-gateway-barion-payment-processor.php';
+    require_once 'includes/class-wc-gateway-barion-order-helper.php';
 
     /**
      * Add the Gateway to WooCommerce
@@ -41,40 +43,33 @@ function init_gateway() {
     add_filter('woocommerce_payment_gateways', 'woocommerce_add_gateway_barion_gateway' );
 }
 
-
-function filter_orders_to_pay($element) {
-    return $element->get_status() == 'pending'; // TODO: check dates
-}
-
 function wcs_barion_scheduled_subscription($subscription_id) { // TODO: refactor me
     $order = new WC_Subscription($subscription_id);
 
-    if (!isPaymentMethodBarion($order)) {
+    WC_Gateway_Barion::log('b1');
+
+    if (!WC_Gateway_Barion_Order_Helper::is_payment_method_barion($order)) {
         return;
     }
-    $instance = new WC_Gateway_Barion();
 
-    $related_orders = array_filter($order->get_related_orders( 'all', 'renewal', 'resubscribe' ), 'filter_orders_to_pay');
+    WC_Gateway_Barion::log('b2');
+
+
+    $instance = new WC_Gateway_Barion();
+    $orders_to_pay = WC_Gateway_Barion_Order_Helper::get_orders_to_pay($order);
+    WC_Gateway_Barion::log('b3');
 
     $token = $order->get_parent()->get_meta('barion_order_token');
+    WC_Gateway_Barion::log('b4 token: '.$token);
 
-    foreach ($related_orders as $related_order) {
+    foreach ($orders_to_pay as $order_to_pay) {
         $request = new WC_Gateway_Barion_Request($instance->barion_client, $instance);
-        $request->prepare_payment($related_order, false, $token);
-        $redirectUrl = $request->get_redirect_url();
-        $related_order->add_order_note(__('User redirected to the Barion payment page.', 'pay-via-barion-for-woocommerce') . ' redirectUrl: "' . $redirectUrl . '"');
+        WC_Gateway_Barion_Payment_Processor::process_payment($request, $order_to_pay, $token, false);
     }
+    WC_Gateway_Barion::log('b5');
 
 }
-
-/**
- * @param WC_Subscription $order
- * @return bool
- */
-function isPaymentMethodBarion(WC_Subscription $order)
-{
-    return $order->get_payment_method() == 'barion';
-}
-
 add_action('woocommerce_scheduled_subscription_payment', 'wcs_barion_scheduled_subscription');
+
+
 

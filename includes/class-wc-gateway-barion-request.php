@@ -21,16 +21,18 @@ class WC_Gateway_Barion_Request {
         $transaction->Total = $this->round($order->get_total(), $order->get_currency());
         $transaction->Comment = "";
 
-        $token_string = $token;
-        if ( $register_token && $token == '') {
-            $token_string = WC_Gateway_Barion_Token::generateToken();
-            $order->update_meta_data( 'barion_order_token', $token_string );
-            $order->save();
-        }
 
-        $this->prepare_items($order, $transaction);
 
-        $paymentRequest = new PreparePaymentRequestModel();
+
+
+        $this->prepare_items($order, $transaction); // ??
+
+
+
+
+
+
+        $paymentRequest = new PreparePaymentRequestModel(); // Creating the model
         $paymentRequest->GuestCheckout = true;
         $paymentRequest->PaymentType = PaymentType::Immediate;
         $paymentRequest->FundingSources = array(FundingSourceType::All);
@@ -43,16 +45,18 @@ class WC_Gateway_Barion_Request {
         $paymentRequest->CallbackUrl = WC()->api_request_url('WC_Gateway_Barion');
         $paymentRequest->Currency = $order->get_currency();
         $paymentRequest->InitiateRecurrence = $register_token;
-        $paymentRequest->RecurrenceId = $token_string;
+        $paymentRequest->RecurrenceId = $token;
         $paymentRequest->AddTransaction($transaction);
+
+
+
+
 
         apply_filters('woocommerce_barion_prepare_payment', $paymentRequest, $order);
 
         $this->payment = $this->barion_client->PreparePayment($paymentRequest);
 
         do_action('woocommerce_barion_prepare_payment_called', $this->payment, $order);
-
-        WC_Gateway_Barion::log('PaymentRequestId: ' .$paymentRequest->PaymentRequestId);
 
         if($this->payment->RequestSuccessful) {
             $this->gateway->set_barion_payment_id($order, $this->payment->PaymentId);
