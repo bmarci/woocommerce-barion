@@ -180,13 +180,11 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
         do_action('woocommerce_barion_process_payment', $order);
 
         if($order->get_total() <= 0) { // TODO: refactor me
-            $this->payment_complete($order);
-            if (self::isSubscription($order_id) && wcs_order_contains_resubscribe($order_id)) {
-                $order_parent = array_pop(array_reverse(wcs_get_subscriptions_for_resubscribe_order($order_id)))->get_parent(); // It is not a zero index array...
-                $token = $order_parent->get_meta('barion_order_token');
-                $order->update_meta_data( 'barion_order_token', $token );
-                $order->save();
+            if ($this->isResubscribe($order_id)) {
+                $this->updateOrderToken($order_id, $order);
             }
+
+            $this->payment_complete($order);
 
             return array(
                 'result' => 'success',
@@ -296,6 +294,36 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
 
             $order->update_status($order_status, __('Order status updated based on the settings.', 'pay-via-barion-for-woocommerce'));
         }
+    }
+
+    /**
+     * @param $order_id
+     * @return bool
+     */
+    public function isResubscribe($order_id)
+    {
+        return self::isSubscription($order_id) && wcs_order_contains_resubscribe($order_id);
+    }
+
+    /**
+     * @param $order_id
+     * @return mixed
+     */
+    public function getFirstElementOfArray($array)
+    {
+        return array_pop(array_reverse($array));
+    }
+
+    /**
+     * @param $order_id
+     * @param WC_Order $order
+     */
+    public function updateOrderToken($order_id, WC_Order $order)
+    {
+        $order_parent = $this->getFirstElementOfArray(wcs_get_subscriptions_for_resubscribe_order($order_id))->get_parent(); // It is not a zero index array...
+        $token = $order_parent->get_meta('barion_order_token');
+        $order->update_meta_data('barion_order_token', $token);
+        $order->save();
     }
 
 }

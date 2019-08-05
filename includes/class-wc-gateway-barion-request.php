@@ -23,7 +23,7 @@ class WC_Gateway_Barion_Request {
 
         $token_string = $token;
         if ( $register_token && $token == '') {
-            $token_string = hash( 'sha256', random_bytes(32));
+            $token_string = WC_Gateway_Barion_Token::generateToken();
             $order->update_meta_data( 'barion_order_token', $token_string );
             $order->save();
         }

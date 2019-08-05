@@ -49,7 +49,7 @@ function filter_orders_to_pay($element) {
 function wcs_barion_scheduled_subscription($subscription_id) { // TODO: refactor me
     $order = new WC_Subscription($subscription_id);
 
-    if ( $order->get_payment_method() != 'barion' ) {
+    if (!isPaymentMethodBarion($order)) {
         return;
     }
     $instance = new WC_Gateway_Barion();
@@ -65,6 +65,15 @@ function wcs_barion_scheduled_subscription($subscription_id) { // TODO: refactor
         $related_order->add_order_note(__('User redirected to the Barion payment page.', 'pay-via-barion-for-woocommerce') . ' redirectUrl: "' . $redirectUrl . '"');
     }
 
+}
+
+/**
+ * @param WC_Subscription $order
+ * @return bool
+ */
+function isPaymentMethodBarion(WC_Subscription $order)
+{
+    return $order->get_payment_method() == 'barion';
 }
 
 add_action('woocommerce_scheduled_subscription_payment', 'wcs_barion_scheduled_subscription');
