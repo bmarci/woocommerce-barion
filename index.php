@@ -51,7 +51,7 @@ function wcs_barion_scheduled_subscription($subscription_id) { // TODO: refactor
 
     $order = new WC_Subscription($subscription_id);
 
-    $related_orders = array_filter($order->get_related_orders( 'all', 'renewal' ), 'filter_orders_to_pay');
+    $related_orders = array_filter($order->get_related_orders( 'all', 'renewal', 'resubscribe' ), 'filter_orders_to_pay');
 
     $token = $order->get_parent()->get_meta('barion_order_token');
 

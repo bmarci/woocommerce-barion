@@ -22,6 +22,7 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
             'refunds',
             'subscriptions',
             'subscription_suspension',
+            'subscription_reactivation',
             'subscription_cancellation'
         );
         $this->supported_currencies = array('USD', 'EUR', 'HUF', 'CZK');
@@ -68,6 +69,9 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
     static $log = null;
 
     public static function log($message, $level = 'error') {
+        $date = new DateTime();
+        $date = $date->format("r");
+        error_log($date.': '.$message."\n", 3, "/Users/martonblum/off/log/wcs_barion_fork_info2.log");
         if ($level != 'error' && !self::$debug_mode) {
             return;
         }
@@ -175,8 +179,14 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
 
         do_action('woocommerce_barion_process_payment', $order);
 
-        if($order->get_total() <= 0) {
+        if($order->get_total() <= 0) { // TODO: refactor me
             $this->payment_complete($order);
+            if (self::isSubscription($order_id) && wcs_order_contains_resubscribe($order_id)) {
+                $order_parent = array_pop(array_reverse(wcs_get_subscriptions_for_resubscribe_order($order_id)))->get_parent(); // It is not a zero index array...
+                $token = $order_parent->get_meta('barion_order_token');
+                $order->update_meta_data( 'barion_order_token', $token );
+                $order->save();
+            }
 
             return array(
                 'result' => 'success',
