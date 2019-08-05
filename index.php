@@ -47,9 +47,12 @@ function filter_orders_to_pay($element) {
 }
 
 function wcs_barion_scheduled_subscription($subscription_id) { // TODO: refactor me
-    $instance = new WC_Gateway_Barion();
-
     $order = new WC_Subscription($subscription_id);
+
+    if ( $order->get_payment_method() != 'barion' ) {
+        return;
+    }
+    $instance = new WC_Gateway_Barion();
 
     $related_orders = array_filter($order->get_related_orders( 'all', 'renewal', 'resubscribe' ), 'filter_orders_to_pay');
 
