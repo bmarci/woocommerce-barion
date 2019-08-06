@@ -10,7 +10,7 @@ require_once 'includes/class-wc-gateway-barion-return-from-payment.php';
 require_once 'includes/class-wc-gateway-barion-request.php';
 require_once 'includes/class-wc-gateway-barion-token.php';
 require_once 'includes/class-wc-gateway-barion-payment-processor.php';
-require_once 'includes/class-wc-gateway-barion-order-helper.php';
+require_once 'includes/class-wc-gateway-barion-order-wrapper.php';
 
 
 class WC_Gateway_Barion extends WC_Payment_Gateway {
@@ -180,6 +180,7 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
 
     function process_payment($order_id) {
         $order = new WC_Order($order_id);
+        $order_wrapper = new WC_Gateway_Barion_Order_Wrapper($order);
         $token = '';
 
         do_action('woocommerce_barion_process_payment', $order);
@@ -187,10 +188,10 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
         WC_Gateway_Barion::log('1');
 
         if($order->get_total() <= 0) { // TODO: refactor me
-            if (WC_Gateway_Barion_Order_Helper::isResubscribe($order_id)) {
-                $order_parent = WC_Gateway_Barion_Order_Helper::getInitialSubscriptionOrder($order_id);
+            if ($order_wrapper->isResubscribe()) {
+                $order_parent = $order_wrapper->getInitialSubscriptionOrder();
                 $token = $order_parent->get_meta('barion_order_token');
-                WC_Gateway_Barion_Order_Helper::updateOrderToken($order, $token);
+                $order_wrapper->updateOrderToken($token);
             }
 
             $this->payment_complete($order);
@@ -208,19 +209,19 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
         WC_Gateway_Barion::log('3');
 
 
-        if (WC_Gateway_Barion_Order_Helper::is_subscription($order_id)) {
+        if ($order_wrapper->is_subscription()) {
             WC_Gateway_Barion::log('4');
 
             $token = WC_Gateway_Barion_Token::generate_token();
             WC_Gateway_Barion::log('5');
 
-            WC_Gateway_Barion_Order_Helper::updateOrderToken($order, $token);
+            $order_wrapper->updateOrderToken($token);
             WC_Gateway_Barion::log('6');
 
         }
         WC_Gateway_Barion::log('7');
 
-        return  WC_Gateway_Barion_Payment_Processor::process_payment($request, $order, $token, WC_Gateway_Barion_Order_Helper::is_subscription($order_id));
+        return  WC_Gateway_Barion_Payment_Processor::process_payment($request, $order, $token, $order_wrapper->is_subscription($order_id));
     }
 
     /**

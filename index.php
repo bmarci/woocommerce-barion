@@ -30,7 +30,7 @@ function woocommerce_gateway_barion_init() {
 function init_gateway() {
     require_once('class-wc-gateway-barion.php');
     require_once 'includes/class-wc-gateway-barion-payment-processor.php';
-    require_once 'includes/class-wc-gateway-barion-order-helper.php';
+    require_once 'includes/class-wc-gateway-barion-order-wrapper.php';
 
     /**
      * Add the Gateway to WooCommerce
@@ -45,10 +45,11 @@ function init_gateway() {
 
 function wcs_barion_scheduled_subscription($subscription_id) { // TODO: refactor me
     $order = new WC_Subscription($subscription_id);
+    $order_wrapper = new WC_Gateway_Barion_Order_Wrapper($order);
 
     WC_Gateway_Barion::log('b1');
 
-    if (!WC_Gateway_Barion_Order_Helper::is_payment_method_barion($order)) {
+    if (!$order_wrapper->is_payment_method_barion()) {
         return;
     }
 
@@ -56,10 +57,10 @@ function wcs_barion_scheduled_subscription($subscription_id) { // TODO: refactor
 
 
     $instance = new WC_Gateway_Barion();
-    $orders_to_pay = WC_Gateway_Barion_Order_Helper::get_orders_to_pay($order);
+    $orders_to_pay = $order_wrapper->get_orders_to_pay();
     WC_Gateway_Barion::log('b3');
 
-    $token = $order->get_parent()->get_meta('barion_order_token');
+    $token = $order_wrapper->get_subscription_token();
     WC_Gateway_Barion::log('b4 token: '.$token);
 
     foreach ($orders_to_pay as $order_to_pay) {
