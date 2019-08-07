@@ -11,12 +11,13 @@ require_once 'includes/class-wc-gateway-barion-request.php';
 require_once 'includes/class-wc-gateway-barion-token.php';
 require_once 'includes/class-wc-gateway-barion-payment-processor.php';
 require_once 'includes/class-wc-gateway-barion-order-wrapper.php';
-
+require_once 'includes/class-wc-gateway-barion-model-creator.php';
+require_once 'includes/class-wc-gateway-barion-model-creator-subscription.php';
 
 class WC_Gateway_Barion extends WC_Payment_Gateway {
 
     public function __construct() {
-        $this->id                 = 'barion';
+                $this->id                 = 'barion';
         $this->method_title       = __('Barion', 'pay-via-barion-for-woocommerce');
         $this->method_description = sprintf( __( 'Barion payment gateway sends customers to Barion to enter their payment information. Barion callback requires cURL support to update order statuses after payment. Check the %ssystem status%s page for more details.', 'pay-via-barion-for-woocommerce' ), '<a href="' . admin_url( 'admin.php?page=wc-status' ) . '">', '</a>' );
         $this->has_fields         = false;
@@ -59,6 +60,10 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
             $order_received_handler = new WC_Gateway_Barion_Return_From_Payment($this->barion_client, $this);
             do_action('woocommerce_barion_init', $this->barion_client, $this);
         }
+
+        WC_Gateway_Barion::log('C2');
+        $model_creator = class_exists('WC_Subscriptions_Order') ? new WC_Gateway_Barion_Model_Creator_Subscription() : new WC_Gateway_Barion_Model_Creator();
+        $this->barion_request = new WC_Gateway_Barion_Request($this->barion_client, $this, $model_creator);
 
     }
 
@@ -180,18 +185,16 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
 
     function process_payment($order_id) {
         $order = new WC_Order($order_id);
-        $order_wrapper = new WC_Gateway_Barion_Order_Wrapper($order);
-        $token = '';
 
         do_action('woocommerce_barion_process_payment', $order);
 
-        WC_Gateway_Barion::log('1');
-
         if($order->get_total() <= 0) { // TODO: refactor me
-            if ($order_wrapper->isResubscribe()) {
-                $order_parent = $order_wrapper->getInitialSubscriptionOrder();
+            $order_wrapper = new WC_Gateway_Barion_Order_Wrapper($order);
+
+            if ($order_wrapper->is_resubscribe()) {
+                $order_parent = $order_wrapper->get_initial_subscription_order();
                 $token = $order_parent->get_meta('barion_order_token');
-                $order_wrapper->updateOrderToken($token);
+                $order_wrapper->update_order_token($token);
             }
 
             $this->payment_complete($order);
@@ -201,27 +204,8 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
                 'redirect' => $this->get_return_url($order)
             );
         }
-        WC_Gateway_Barion::log('2');
 
-
-        $request = new WC_Gateway_Barion_Request($this->barion_client, $this);
-
-        WC_Gateway_Barion::log('3');
-
-
-        if ($order_wrapper->is_subscription()) {
-            WC_Gateway_Barion::log('4');
-
-            $token = WC_Gateway_Barion_Token::generate_token();
-            WC_Gateway_Barion::log('5');
-
-            $order_wrapper->updateOrderToken($token);
-            WC_Gateway_Barion::log('6');
-
-        }
-        WC_Gateway_Barion::log('7');
-
-        return  WC_Gateway_Barion_Payment_Processor::process_payment($request, $order, $token, $order_wrapper->is_subscription($order_id));
+        return  WC_Gateway_Barion_Payment_Processor::process_payment($this->barion_request, $order);
     }
 
     /**
@@ -286,8 +270,7 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
 
     public function update_order_status($order) {
         if(empty($this->settings) || empty($this->settings['order_status'])) {
-            WC_Gateway_Barion::log("settings['order_status'] is empty");
-            return;
+                        return;
         }
 
         $should_update_status = $this->settings['order_status'] != 'automatic';
@@ -295,7 +278,6 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
 
         if($should_update_status) {
             $order_status = apply_filters('woocommerce_barion_order_status', $this->settings['order_status'], $order);
-
             $order->update_status($order_status, __('Order status updated based on the settings.', 'pay-via-barion-for-woocommerce'));
         }
     }

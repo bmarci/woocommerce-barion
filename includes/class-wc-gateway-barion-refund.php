@@ -1,17 +1,20 @@
 <?php
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (!defined('ABSPATH')) {
     exit;
 }
 
-class WC_Gateway_Barion_Refund {
-    public function __construct($barion_client, $gateway) {
+class WC_Gateway_Barion_Refund
+{
+    public function __construct($barion_client, $gateway)
+    {
         $this->barion_client = $barion_client;
         $this->gateway = $gateway;
         $this->refund_succeeded = false;
     }
 
-    public function refund_order($order, $amount = null, $reason = '') {
+    public function refund_order($order, $amount = null, $reason = '')
+    {
         $transaction = new TransactionToRefundModel();
         $transaction->TransactionId = $order->get_transaction_id();
         $transaction->POSTransactionId = $order->get_id();

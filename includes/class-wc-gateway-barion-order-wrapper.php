@@ -1,13 +1,14 @@
 <?php
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (!defined('ABSPATH')) {
     exit;
 }
 
 /**
  * Class WC_Gateway_Barion_Order_Helper A class to wrap some common order functions.
  */
-class WC_Gateway_Barion_Order_Wrapper {
+class WC_Gateway_Barion_Order_Wrapper
+{
 
     private $order;
 
@@ -16,7 +17,8 @@ class WC_Gateway_Barion_Order_Wrapper {
         $this->order = $order;
     }
 
-    public function filter_orders_to_pay($element) {
+    public function filter_orders_to_pay($element)
+    {
         return $element->get_status() == 'pending'; // TODO: check dates
     }
 
@@ -42,6 +44,15 @@ class WC_Gateway_Barion_Order_Wrapper {
 
     /**
      * @param $order_id
+     * @return bool
+     */
+    public function is_resubscribe()
+    {
+        return self::is_subscription($this->order->get_id()) && wcs_order_contains_resubscribe($this->order->get_id());
+    }
+
+    /**
+     * @param $order_id
      * @return bool True if the order contains a subscription.
      */
     public function is_subscription()
@@ -50,30 +61,11 @@ class WC_Gateway_Barion_Order_Wrapper {
             ? WC_Subscriptions_Order::order_contains_subscription($this->order->get_id()) : false;
     }
 
-
-    /**
-     * @param $order_id
-     * @return bool
-     */
-    public function isResubscribe()
-    {
-        return self::is_subscription($this->order->get_id()) && wcs_order_contains_resubscribe($this->order->get_id());
-    }
-
-    /**
-     * @param $order_id
-     * @return mixed
-     */
-    public function getFirstElementOfArray($array)
-    {
-        return array_pop(array_reverse($array));
-    }
-
     /**
      * @param WC_Order $order
      * @param $token_string
      */
-    public function updateOrderToken($token_string)
+    public function update_order_token($token_string)
     {
         $this->order->update_meta_data('barion_order_token', $token_string);
         $this->order->save();
@@ -83,13 +75,25 @@ class WC_Gateway_Barion_Order_Wrapper {
      * @param $order_id
      * @return mixed
      */
-    public function getInitialSubscriptionOrder()
+    public function get_initial_subscription_order()
     {
-        return self::getFirstElementOfArray(wcs_get_subscriptions_for_resubscribe_order($this->order->get_id()))->get_parent(); // It is not a zero index array...
+        return self::get_first_element_of_array(wcs_get_subscriptions_for_resubscribe_order($this->order->get_id()))->get_parent(); // It is not a zero index array...
     }
 
-    public function get_subscription_token() {
-        return $this->order->get_parent()->get_meta('barion_order_token');
+    /**
+     * @param $order_id
+     * @return mixed
+     */
+    public function get_first_element_of_array($array)
+    {
+        return array_pop(array_reverse($array));
+    }
+
+    public function get_subscription_token()
+    {
+        return class_exists('WC_Subscriptions_Order')
+            ?   ($this->order->get_parent()->get_meta('barion_order_token') ?: '')
+            : '';
     }
 
 }
