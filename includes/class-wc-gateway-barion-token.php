@@ -1,12 +1,14 @@
 <?php
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (!defined('ABSPATH')) {
     exit;
 }
+
 /**
  * Class WC_Gateway_Barion_Token A helper class to provide secure tokens.
  */
-class WC_Gateway_Barion_Token {
+class WC_Gateway_Barion_Token
+{
 
     private function __construct()
     {
