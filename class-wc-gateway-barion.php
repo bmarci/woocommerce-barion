@@ -61,7 +61,6 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
             do_action('woocommerce_barion_init', $this->barion_client, $this);
         }
 
-        WC_Gateway_Barion::log('C2');
         $model_creator = class_exists('WC_Subscriptions_Order') ? new WC_Gateway_Barion_Model_Creator_Subscription() : new WC_Gateway_Barion_Model_Creator();
         $this->barion_request = new WC_Gateway_Barion_Request($this->barion_client, $this, $model_creator);
 
@@ -78,9 +77,6 @@ class WC_Gateway_Barion extends WC_Payment_Gateway {
     static $log = null;
 
     public static function log($message, $level = 'error') {
-        $date = new DateTime();
-        $date = $date->format("r");
-        error_log($date.': '.$message."\n", 3, "/Users/martonblum/off/log/wcs_barion_fork_info2.log");
         if ($level != 'error' && !self::$debug_mode) {
             return;
         }
