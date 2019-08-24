@@ -212,3 +212,11 @@ msgstr ""
 msgctxt "Order status"
 msgid "Pending payment"
 msgstr ""
+
+#: index.php:80
+msgid "I agree recurring payments."
+msgstr ""
+
+#: index.php:98
+msgid "Please agree recurring payments."
+msgstr ""
