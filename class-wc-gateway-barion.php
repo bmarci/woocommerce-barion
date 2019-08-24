@@ -13,6 +13,7 @@ require_once 'includes/class-wc-gateway-barion-payment-processor.php';
 require_once 'includes/class-wc-gateway-barion-order-wrapper.php';
 require_once 'includes/class-wc-gateway-barion-model-creator.php';
 require_once 'includes/class-wc-gateway-barion-model-creator-subscription.php';
+require_once 'includes/class-wc-gateway-barion-renderer.php';
 
 class WC_Gateway_Barion extends WC_Payment_Gateway {
 
